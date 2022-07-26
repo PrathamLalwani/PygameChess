@@ -1,4 +1,4 @@
-from this import d
+
 import numpy as np
 class GameState():
     
