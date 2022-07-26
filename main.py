@@ -1,9 +1,9 @@
 
-from re import S
+from telnetlib import GA
 import pygame as p
 import os
+from GameState import GameState, PIECES
 
-from GameState import GameState 
 
 
 
@@ -15,14 +15,14 @@ WHITE = p.Color("white")
 BLACK_SQUARE_IMAGE = p.image.load(os.path.join('images','square brown dark.png'))
 BLACK_SQUARE = p.transform.scale(BLACK_SQUARE_IMAGE, (SQUARE_SIZE,SQUARE_SIZE))
 WHITE_SQUARE_IMAGE = p.image.load(os.path.join('images','square brown light.png'))
+OFFSET= 8
 WHITE_SQUARE = p.transform.scale(WHITE_SQUARE_IMAGE, (SQUARE_SIZE,SQUARE_SIZE))
 GAME_STATE = GameState()
 IMAGES = {}
 
 def loadImages():
-    pieces = ['br','bk','bb','bq','bc','bp','wr','wk','wb','wq','wc','wp']
-    for piece in pieces:
-        IMAGES[piece] = p.transform.scale(p.image.load(os.path.join('images',piece+'.png')),(SQUARE_SIZE,SQUARE_SIZE))
+    for piece in PIECES:
+        IMAGES[piece] = p.transform.scale(p.image.load(os.path.join('images',piece+'.png')),(0.7*SQUARE_SIZE,0.75*SQUARE_SIZE))
  
 def drawBoard(screen):
 
@@ -35,7 +35,7 @@ def drawBoard(screen):
             else:
                 screen.blit(WHITE_SQUARE,(column*SQUARE_SIZE,row*SQUARE_SIZE))
             if board[row][column] in IMAGES:
-                screen.blit(IMAGES[board[row][column]],(column*SQUARE_SIZE,row*SQUARE_SIZE))
+                screen.blit(IMAGES[board[row][column]],(column*SQUARE_SIZE+OFFSET,row*SQUARE_SIZE+OFFSET))
 
     
 
@@ -46,13 +46,33 @@ def main():
     loadImages()
     screen.fill(WHITE)
     running = True
+    
+    pieceSelected = ()
+    landingSelected = ()
     while running:
         clock.tick(MAX_FPS)
         for e in p.event.get():
-            print(e)
+            # print(e)
             drawBoard(screen)
             if e.type == p.QUIT:
                 running = False
+            if e.type == p.MOUSEBUTTONDOWN:
+                position = e.pos
+                column = position[0]// SQUARE_SIZE
+                row = position[1]//SQUARE_SIZE
+                if len(pieceSelected) == 0:
+                    print('hey')
+                    if (GAME_STATE.checkPiece(row,column)):
+                        pieceSelected = (row,column)
+                elif 
+                else:
+                    if(not GAME_STATE.checkPiece(row,column) and (row,column) != pieceSelected):
+                        landingSelected = (row, column)
+                        print(pieceSelected,landingSelected)
+                        GAME_STATE.makeMove(pieceSelected,landingSelected)
+                        pieceSelected = ()
+                        landingSelected = ()
+                                        
             
         p.display.update()
         
