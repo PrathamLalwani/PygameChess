@@ -32,6 +32,7 @@ def main():
     while running:
         clock.tick(MAX_FPS)
         for e in p.event.get():
+            print(e)
             drawBoard(screen)
             if e.type == p.QUIT:
                 running = False
