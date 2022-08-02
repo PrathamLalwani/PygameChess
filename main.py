@@ -2,6 +2,7 @@ from re import S
 import pygame as p
 import os
 from GameState import GameState
+from piece import Piece
 
 PIECES = {"br", "bk", "bb", "bq", "bc", "bp", "wr", "wk", "wb", "wq", "wc", "wp"}
 MAX_FPS = 30
@@ -35,19 +36,52 @@ def drawBoard(screen):
                 screen.blit(BLACK_SQUARE, (column * SQUARE_SIZE, row * SQUARE_SIZE))
             else:
                 screen.blit(WHITE_SQUARE, (column * SQUARE_SIZE, row * SQUARE_SIZE))
+    drawPieces(screen)
+
+
+def drawPieces(screen):
+    board = GAME_STATE.board
+    for row in range(NSQUARE):
+        for column in range(NSQUARE):
             if board[row][column].imageString in IMAGES:
-                for (x, y) in board[row][column].getMoves():
-                    print('hey')
-                    screen.blit(
-                        p.draw.rect(
-                            p.Rect(column * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE),
-                            p.Color("white"),
-                        ),
-                        (column * SQUARE_SIZE , row * SQUARE_SIZE )
-                    )
+                if board[row][column].isSelected:
+                    for (x, y) in board[row][column].movesPossible:
+                        image = p.Surface((SQUARE_SIZE, SQUARE_SIZE))
+                        image.set_alpha(50)
+                        image.fill((39, 251, 107))
+                        screen.blit(image, (y * SQUARE_SIZE, x * SQUARE_SIZE))
+
                 screen.blit(
-                    IMAGES[board[row][column].imageString], (column * SQUARE_SIZE + OFFSET, row * SQUARE_SIZE + OFFSET)
+                    IMAGES[board[row][column].imageString],
+                    (column * SQUARE_SIZE + OFFSET, row * SQUARE_SIZE + OFFSET),
                 )
+
+
+def handleMouseClick(e, pieceSelected: Piece, landingSelected):
+    position = e.pos
+    column = position[0] // SQUARE_SIZE
+    row = position[1] // SQUARE_SIZE
+    pieceClicked: Piece = GAME_STATE.board[row][column]
+    if not pieceSelected:
+        if not pieceClicked.emptyTile and GAME_STATE.whiteMove == pieceClicked.isWhite:
+            pieceSelected = pieceClicked
+            pieceSelected.selectPiece()
+    else:
+        if pieceSelected == pieceClicked:
+            pieceSelected.unselectPiece()
+            pieceSelected = ()
+        elif not pieceClicked.emptyTile and pieceSelected.isWhite == pieceClicked.isWhite:
+            pieceSelected.unselectPiece()
+            pieceSelected = pieceClicked
+            pieceSelected.selectPiece()
+
+        if pieceClicked.emptyTile:
+            landingSelected = (row, column)
+            pieceSelected.unselectPiece()
+            if GAME_STATE.makeMove(pieceSelected, landingSelected):
+                pieceSelected = None
+                landingSelected = ()
+    return (pieceSelected, landingSelected)
 
 
 def main():
@@ -57,7 +91,7 @@ def main():
     loadImages()
     screen.fill(WHITE)
     running = True
-    pieceSelected = ()
+    pieceSelected: Piece = ()
     landingSelected = ()
     while running:
         clock.tick(MAX_FPS)
@@ -67,21 +101,7 @@ def main():
             if e.type == p.QUIT:
                 running = False
             if e.type == p.MOUSEBUTTONDOWN:
-                position = e.pos
-                column = position[0] // SQUARE_SIZE
-                row = position[1] // SQUARE_SIZE
-                if len(pieceSelected) == 0:
-                    if GAME_STATE.checkPiece(row, column):
-                        pieceSelected = (row, column)
-                elif pieceSelected == (row, column):
-                    pieceSelected = ()
-                else:
-                    if not GAME_STATE.checkPiece(row, column):
-                        landingSelected = (row, column)
-                        print(pieceSelected, landingSelected)
-                        GAME_STATE.makeMove(pieceSelected, landingSelected)
-                        pieceSelected = ()
-                        landingSelected = ()
+                (pieceSelected, landingSelected) = handleMouseClick(e, pieceSelected, landingSelected)
 
         p.display.update()
 
