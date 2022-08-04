@@ -2,7 +2,7 @@ from re import S
 import pygame as p
 import os
 from GameState import GameState
-from piece import Piece
+from piece import King, Piece
 
 PIECES = {"br", "bk", "bb", "bq", "bc", "bp", "wr", "wk", "wb", "wq", "wc", "wp"}
 MAX_FPS = 30
@@ -15,7 +15,7 @@ BLACK_SQUARE = p.transform.scale(BLACK_SQUARE_IMAGE, (SQUARE_SIZE, SQUARE_SIZE))
 WHITE_SQUARE_IMAGE = p.image.load(os.path.join("images", "square brown light.png"))
 OFFSET = 8
 WHITE_SQUARE = p.transform.scale(WHITE_SQUARE_IMAGE, (SQUARE_SIZE, SQUARE_SIZE))
-GAME_STATE = GameState()
+GAME_STATE = GameState(1)
 IMAGES = {}
 
 
@@ -43,16 +43,26 @@ def drawPieces(screen):
     board = GAME_STATE.board
     for row in range(NSQUARE):
         for column in range(NSQUARE):
-            if board[row][column].imageString in IMAGES:
-                if board[row][column].isSelected:
-                    for (x, y) in board[row][column].movesPossible:
+            piece: Piece = board[row][column]
+            if piece.imageString in IMAGES:
+
+                if isinstance(piece, King) and piece.inCheck:
+
+                    (x, y) = GAME_STATE.blackKing.currentPos
+                    image = p.Surface((SQUARE_SIZE, SQUARE_SIZE))
+                    image.set_alpha(100)
+                    image.fill((255, 52, 62))
+                    screen.blit(image, (y * SQUARE_SIZE, x * SQUARE_SIZE))
+
+                if piece.isSelected:
+                    for (x, y) in piece.movesPossible:
                         image = p.Surface((SQUARE_SIZE, SQUARE_SIZE))
-                        image.set_alpha(50)
+                        image.set_alpha(100)
                         image.fill((39, 251, 107))
                         screen.blit(image, (y * SQUARE_SIZE, x * SQUARE_SIZE))
 
                 screen.blit(
-                    IMAGES[board[row][column].imageString],
+                    IMAGES[piece.imageString],
                     (column * SQUARE_SIZE + OFFSET, row * SQUARE_SIZE + OFFSET),
                 )
 
@@ -75,10 +85,15 @@ def handleMouseClick(e, pieceSelected: Piece, landingSelected):
             pieceSelected = pieceClicked
             pieceSelected.selectPiece()
 
-        if pieceClicked.emptyTile:
+        else:
             landingSelected = (row, column)
             pieceSelected.unselectPiece()
             if GAME_STATE.makeMove(pieceSelected, landingSelected):
+                GAME_STATE.generateAllMoves()
+                GAME_STATE.checkChecks()
+                if not pieceSelected.hasMoved:
+                    pieceSelected.moved()
+                GAME_STATE.filterMoves()
                 pieceSelected = None
                 landingSelected = ()
     return (pieceSelected, landingSelected)
@@ -91,17 +106,20 @@ def main():
     loadImages()
     screen.fill(WHITE)
     running = True
-    pieceSelected: Piece = ()
+    pieceSelected: Piece = None
     landingSelected = ()
     while running:
         clock.tick(MAX_FPS)
         for e in p.event.get():
-            # print(e)
             drawBoard(screen)
             if e.type == p.QUIT:
                 running = False
             if e.type == p.MOUSEBUTTONDOWN:
                 (pieceSelected, landingSelected) = handleMouseClick(e, pieceSelected, landingSelected)
+            if e.type == p.KEYDOWN:
+                if GAME_STATE.undoMove():
+                    GAME_STATE.generateAllMoves()
+                    GAME_STATE.filterMoves()
 
         p.display.update()
 

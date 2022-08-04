@@ -1,6 +1,3 @@
-from pyparsing import col
-
-
 PIECE_INFO = {"p": "pawn", "c": "king", "k": "knight", "q": "queen", "r": "rook", "b": "bishop"}
 
 
@@ -19,19 +16,21 @@ class Piece:
         self.imageString = piece
 
     def updatePos(self, position):
-        if not self.hasMoved:
-            self.hasMoved = True
+
         self.currentPos = position
 
     def generateMoves(self, board):
         pass
 
+    def moved(self):
+        self.hasMoved = True
+
     def clearMoves(self):
         self.movesPossible = set()
-    
+
     def selectPiece(self):
         self.isSelected = True
-    
+
     def unselectPiece(self):
         self.isSelected = False
 
@@ -70,6 +69,12 @@ class Pawn(Piece):
                     self.movesPossible.add((row, column))
 
     def generateMoves(self, board):
+        if not self.currentPos:
+            self.movesPossible = set()
+            return
+        if not self.currentPos:
+            self.movesPossible = set()
+            return
         (row, column) = self.currentPos
 
         if not self.hasMoved:
@@ -88,6 +93,7 @@ class Pawn(Piece):
 class Rook(Piece):
     def __init__(self, piece, position):
         super().__init__(piece, position)
+        self.canCastle = True
 
     def addIf(self, positions, board):
         for position in positions:
@@ -103,6 +109,12 @@ class Rook(Piece):
                 break
 
     def generateMoves(self, board):
+        if not self.currentPos:
+            self.movesPossible = set()
+            return
+        if not self.currentPos:
+            self.movesPossible = set()
+            return
         (row, column) = self.currentPos
         Rook.addIf(self, [(row + i, column) for i in range(1, 8)], board)
         Rook.addIf(self, [(row - i, column) for i in range(1, 8)], board)
@@ -115,7 +127,6 @@ class Bishop(Piece):
         super().__init__(piece, position)
 
     def addIf(self, positions, board):
-        print(positions)
         for position in positions:
             row = position[0]
             column = position[1]
@@ -131,6 +142,10 @@ class Bishop(Piece):
                 break
 
     def generateMoves(self, board):
+        if not self.currentPos:
+            self.movesPossible = set()
+            return
+
         (row, column) = self.currentPos
 
         Bishop.addIf(self, [(row + i, column + i) for i in range(1, 8)], board)
@@ -142,6 +157,8 @@ class Bishop(Piece):
 class King(Piece):
     def __init__(self, piece, position):
         super().__init__(piece, position)
+        self.inCheck: bool = False
+        self.canCastle: bool = True
 
     def addIf(self, positions, board):
         for position in positions:
@@ -149,10 +166,12 @@ class King(Piece):
             column = position[1]
 
             if self.checkValidCoordinate((row, column), board):
-                print(position)
                 self.movesPossible.add((row, column))
 
     def generateMoves(self, board):
+        if not self.currentPos:
+            self.movesPossible = set()
+            return
         (row, column) = self.currentPos
         x = [
             (row - 1, column - 1),
@@ -172,33 +191,37 @@ class Queen(Bishop, Rook):
         Piece.__init__(self, piece, position)
 
     def generateMoves(self, board):
+        if not self.currentPos:
+            self.movesPossible = set()
+            return
         Rook.generateMoves(self, board)
-        print(self.movesPossible)
         Bishop.generateMoves(self, board)
 
 
 class Knight(Piece):
     def __init__(self, piece, position):
         super().__init__(piece, position)
-    
+
     def addIf(self, positions, board):
         for position in positions:
             row = position[0]
             column = position[1]
 
             if self.checkValidCoordinate((row, column), board):
-                print(position)
                 self.movesPossible.add((row, column))
 
     def generateMoves(self, board):
+        if not self.currentPos:
+            self.movesPossible = set()
+            return
         (row, column) = self.currentPos
         x = [
             (row - 2, column + 1),
             (row - 2, column - 1),
-            (row - 1, column -2),
-            (row + 1, column -2),
-            (row -1, column + 2),
-            (row + 1, column+2),
+            (row - 1, column - 2),
+            (row + 1, column - 2),
+            (row - 1, column + 2),
+            (row + 1, column + 2),
             (row + 2, column - 1),
             (row + 2, column + 1),
         ]
