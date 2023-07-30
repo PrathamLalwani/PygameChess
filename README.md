@@ -1,1 +1,1 @@
-# AIChess
+# PyGame Chess
